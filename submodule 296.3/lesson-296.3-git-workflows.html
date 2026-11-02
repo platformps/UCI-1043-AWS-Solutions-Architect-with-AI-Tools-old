@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lesson 296.3 - Git Workflows for AWS Infrastructure Code and Documentation</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#ffffff; --text:#1b1f23; --muted:#555d66; --h1:#611940; --h3:#7a2455;
+  --th:#611940; --border:#ccd3da; --surface:#f4f7fa; --link:#611940; --labdark:#a31515; --cyan:#71E2FD;
+  --prob-bg:#ffeef7; --prob-bd:#611940;
+  --warn-bg:#fff1dc; --warn-bd:#d47c00;
+  --tip-bg:#e5fe77; --tip-bd:#0b5394; --svb-bg:#e8f2fb; --h34:#05576b;
+  --exam-bg:#e6f5e9; --exam-bd:#2e7d32;
+  --lab-bg:#fffaf0; --focus:#611940; --nav-active:#611940;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171a; --text:#e8eaed; --muted:#aab2ba; --h1:#f0b3d3; --h3:#e8a0c8;
+    --th:#611940; --border:#3b434b; --surface:#1d2227; --link:#f0b3d3; --labdark:#ff9c9c; --cyan:#71E2FD;
+    --prob-bg:#2b1722; --prob-bd:#f0b3d3;
+    --warn-bg:#352711; --warn-bd:#e39a2d;
+    --tip-bg:#10263a; --tip-bd:#5fb4ff; --svb-bg:#10263a; --h34:#7fd4e6;
+    --exam-bg:#12291a; --exam-bd:#5cc36a;
+    --lab-bg:#24201a; --focus:#71E2FD; --nav-active:#8a2d5f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171a; --text:#e8eaed; --muted:#aab2ba; --h1:#f0b3d3; --h3:#e8a0c8;
+  --th:#611940; --border:#3b434b; --surface:#1d2227; --link:#f0b3d3; --labdark:#ff9c9c; --cyan:#71E2FD;
+  --prob-bg:#2b1722; --prob-bd:#f0b3d3;
+  --warn-bg:#352711; --warn-bd:#e39a2d;
+  --tip-bg:#10263a; --tip-bd:#5fb4ff; --svb-bg:#10263a; --h34:#7fd4e6;
+  --exam-bg:#12291a; --exam-bd:#5cc36a;
+  --lab-bg:#24201a; --focus:#71E2FD; --nav-active:#8a2d5f;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:1.05rem;line-height:1.5;min-height:100%}
+a{color:var(--link)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 18px 40px}
+.pagehead{padding:10px 0 18px;border-bottom:5px solid var(--cyan);margin-bottom:20px}
+.brand{display:inline-block;background:#fff;border-radius:8px;padding:6px 10px;margin-bottom:12px}
+.brand img{display:block;height:34px;width:auto}
+.side button.tabbtn[aria-selected="true"]{box-shadow:inset 5px 0 0 var(--cyan)}
+.copy{margin-top:36px;padding-top:14px;border-top:1px solid var(--border);color:var(--muted);font-size:1rem}
+.pagehead h1.title{font-size:2.8rem;line-height:1.5;margin:0 0 6px;color:var(--text);font-weight:700}
+.pagehead p{margin:0;color:var(--muted);font-size:1.1rem}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:28px;align-items:start}
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);max-height:calc(100vh - 24px);overflow:auto;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:10px}
+.side ul{list-style:none;margin:0;padding:0}
+.side button.tabbtn{display:block;width:100%;text-align:left;background:transparent;color:var(--text);border:0;border-radius:8px;padding:9px 11px;font:inherit;font-size:1rem;cursor:pointer;line-height:1.5}
+.side button.tabbtn:hover{background:var(--border)}
+.side button.tabbtn[aria-selected="true"]{background:var(--nav-active);color:#fff;font-weight:700}
+.pager{display:flex;gap:10px;margin-top:10px}
+.pager button{flex:1;font:inherit;font-size:1rem;padding:9px 10px;border-radius:8px;border:1px solid var(--h1);background:var(--bg);color:var(--h1);cursor:pointer;font-weight:600}
+.pager button:disabled{opacity:.45;cursor:not-allowed}
+.pager.bottom{margin-top:28px;max-width:420px}
+main{min-width:0}
+.js .tab{display:none}
+.js .tab.active{display:block}
+.nojs-note{display:none}
+h1.tabh{font-size:2.35rem;line-height:1.5;color:var(--h1);margin:0 0 16px}
+h2{font-size:35px;line-height:1.5;color:var(--text);margin:34px 0 12px}
+h3{font-size:1.45rem;line-height:1.5;color:var(--h34);margin:26px 0 10px;font-weight:700}
+h4{font-size:1.15rem;color:var(--h34);margin:18px 0 8px;font-weight:700}
+p{margin:0 0 12px}
+ul,ol{margin:0 0 14px;padding-left:1.4rem}
+li{margin-bottom:6px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{background:var(--surface);padding:1px 5px;border-radius:4px;font-size:.92em}
+.tw{overflow-x:auto;margin:12px 0 18px;max-width:100%}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:1rem}
+th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+thead th{background:var(--th);color:#fff}
+tbody tr:nth-child(even){background:var(--surface)}
+.problem{border-left:6px solid var(--prob-bd);background:var(--prob-bg);border-radius:0 12px 12px 0;padding:22px 25px;margin:28px 0}
+.problem h2{margin:0 0 8px;font-size:1.35rem}
+.callout{border-left:6px solid;border-radius:0 12px 12px 0;padding:16px 20px;margin:22px 0}
+.callout h4{margin:0 0 8px;color:var(--text);font-size:1.15rem}
+.callout p:last-child,.callout ul:last-child{margin-bottom:0}
+.warn{background:var(--warn-bg);border-color:var(--warn-bd)}
+.tip{background:var(--tip-bg);border-color:var(--tip-bd)}
+.exam{background:var(--exam-bg);border-color:var(--exam-bd)}
+.qbox{border:2px solid var(--tip-bd);border-radius:12px;padding:18px 22px;margin:24px 0;background:var(--bg)}
+.qbox h3{margin-top:0;color:var(--text);font-size:1.25rem}
+.qbox .origin{color:var(--muted);font-size:1rem;margin-bottom:10px}
+.opts{list-style:none;padding:0}
+.opts li{padding:6px 0}
+details{border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:12px 0;background:var(--surface)}
+summary{cursor:pointer;font-weight:700;color:var(--h1)}
+details[open] summary{margin-bottom:10px}
+figure{margin:20px 0}
+.figwrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;padding:8px;background:var(--bg)}
+.figwrap svg{display:block;width:100%;min-width:560px;height:auto}
+figcaption{font-size:1rem;color:var(--muted);margin-top:8px}
+.res{margin:30px 0 10px}
+.res ul{list-style:none;padding:0}
+.res li a{font-weight:600}
+.res .lbl{display:inline-block;min-width:3.6rem;color:var(--muted);font-size:1rem}
+.side-by-side{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.sv-box{fill:var(--surface);stroke:var(--tip-bd);stroke-width:1.6}
+.sv-boxw{fill:var(--warn-bg);stroke:var(--warn-bd);stroke-width:1.6}
+.sv-boxg{fill:var(--exam-bg);stroke:var(--exam-bd);stroke-width:1.6}
+.sv-boxb{fill:var(--svb-bg);stroke:var(--tip-bd);stroke-width:1.6}
+.sv-dash{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 4}
+.sv-line{stroke:var(--text);stroke-width:1.8;fill:none}
+.sv-arrow{fill:var(--text)}
+.sv-t{fill:var(--text);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px}
+.sv-tb{fill:var(--text);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:14px;font-weight:700}
+.sv-tm{fill:var(--muted);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;font-size:13px}
+.srv{position:absolute;left:-9999px}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  .side{position:static;max-height:none}
+  .side ul{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+  .pagehead h1.title{font-size:2.1rem}
+  h1.tabh{font-size:1.7rem}
+  h2{font-size:1.4rem}
+  h3{font-size:1.2rem}
+  .side-by-side{grid-template-columns:1fr}
+  .problem{padding:18px}
+}
+@media (max-width:480px){
+  .side ul{grid-template-columns:1fr}
+}
+.problem h3{margin:0 0 8px;font-size:1.35rem;color:var(--text)}
+.lab-box .lab-sub{font-size:1.25rem;color:#611940;font-weight:700;margin:0 0 8px}
+.lab-expectation{border:1.5px solid #333333;background:#ffffff;color:#1b1f23;border-radius:4px;padding:14px 24px;margin:0 0 26px}
+.lab-expectation p{margin:0 0 8px}
+.lab-expectation a{color:#1b1f23;font-weight:700}
+.lab-box{border:2px dashed #333333;background:#fdf3d7;color:#1b1f23;border-radius:4px;padding:20px 24px 18px;margin:30px 0 0}
+.lab-box .lab-title{text-align:center;color:#611940;font-size:1.9rem;font-weight:700;margin:0 0 18px}
+.lab-box ul{list-style:none;padding-left:10px}
+.lab-box ul li{margin-bottom:10px}
+.lab-box ul li::before{content:"\2192\00a0 ";color:#8a1a1a;font-weight:700}
+.lab-box a.lab-link{color:#00a5a8;font-weight:700;text-decoration:underline}
+code{overflow-wrap:anywhere}pre.flowcode{overflow-x:auto;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.92rem;line-height:1.5}pre.flowcode code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}</style>
+</head>
+<body>
+<div class="wrap">
+<header class="pagehead">
+  <div class="brand"><img src="data:image/webp;base64,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" alt="Per Scholas logo."></div>
+  <h1 class="title">Git Workflows for AWS Infrastructure Code and Documentation</h1>
+  <p>Use Git to manage AWS architecture documentation, Python scripts, Terraform files, and CloudFormation templates: branches, pull requests, protected branches, what to commit, automated checks, and deployments from Git.</p>
+</header>
+
+<div class="layout">
+<aside class="side" aria-label="Lesson tabs">
+  <nav aria-label="Lesson navigation">
+    <ul id="tablist" role="tablist" aria-orientation="vertical">
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="true" aria-controls="tab0" id="b0">Overview and Objectives</button></li>
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="false" aria-controls="tab1" id="b1">1. Version Control With Git</button></li>
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="false" aria-controls="tab2" id="b2">2. Git Workflows and Pull Requests</button></li>
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="false" aria-controls="tab3" id="b3">3. What Belongs in the Repository</button></li>
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="false" aria-controls="tab4" id="b4">4. Working With Infrastructure, Scripts, and Documentation</button></li>
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="false" aria-controls="tab5" id="b5">5. Automating Checks and Deployments</button></li>
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="false" aria-controls="tab6" id="b6">6. Comparison &amp; Scenarios</button></li>
+      <li role="presentation"><button class="tabbtn" role="tab" type="button" aria-selected="false" aria-controls="tab7" id="b7">7. Knowledge Check</button></li>
+    </ul>
+  </nav>
+  <div class="pager" id="pagerTop">
+    <button type="button" id="prevTop">Previous</button>
+    <button type="button" id="nextTop">Next</button>
+  </div>
+</aside>
+
+<main id="main">
+<div class="srv" aria-live="polite" id="live"></div>
+
+<!-- ============ TAB 0 ============ -->
+<section class="tab active" id="tab0" role="tabpanel" aria-labelledby="b0">
+  <h1 class="tabh">Overview and Objectives</h1>
+
+  <h2>Lesson Overview</h2>
+  <h3>Infrastructure as Code (IaC) Automation</h3>
+  <p>Module 296, Infrastructure as Code (IaC) Automation, covers how to define, deploy, and manage AWS infrastructure with templates and code. This lesson covers the habit that makes all of it safe for a team: keeping every file in Git and changing it through a reviewed workflow.</p>
+  <p>CloudFormation templates, Terraform files, Python scripts, and architecture documents are all text. Text can be versioned, compared, reviewed, and restored. This lesson explains the core Git ideas, the GitHub flow, how to protect the main branch, what belongs in a repository and what never does, how each type of file is checked, and how checks and deployments run automatically from Git without long-lived AWS keys. It also shows how CloudFormation Git sync deploys a stack from a repository. The last tabs prepare you for the AWS Certified Solutions Architect – Associate (SAA-C03) exam.</p>
+  <p>The tabs in this lesson cover the following topics:</p>
+  <ul>
+    <li><strong>Tab 1:</strong> why version control for infrastructure, Git concepts and commands, and where the Git repository lives.</li>
+    <li><strong>Tab 2:</strong> the GitHub flow, other branching models, good commits and pull requests, protected branches, undoing a change, and a practice exercise.</li>
+    <li><strong>Tab 3:</strong> a repository layout, what to commit and what never to commit, the .gitignore file, and keeping secrets out of Git.</li>
+    <li><strong>Tab 4:</strong> how to work with CloudFormation files, Terraform files, Python scripts, and architecture documentation.</li>
+    <li><strong>Tab 5:</strong> local checks, pull request checks, deployments from Git, CloudFormation Git sync, access without long-lived keys, and rollback.</li>
+    <li><strong>Tab 6:</strong> the SAA-C03 cheat sheet, exam scenarios, and the lesson summary.</li>
+    <li><strong>Tab 7:</strong> open-ended Knowledge Check questions with model answers.</li>
+  </ul>
+
+  <h2>Table of Contents</h2>
+  <p>The lesson tabs are:</p>
+  <ol class="toc" style="padding-left:1.4rem">
+    <li><button type="button" class="linkbtn" data-go="1" style="background:none;border:0;padding:0;font:inherit;color:var(--link);text-decoration:underline;cursor:pointer">Version Control With Git</button>.</li>
+    <li><button type="button" class="linkbtn" data-go="2" style="background:none;border:0;padding:0;font:inherit;color:var(--link);text-decoration:underline;cursor:pointer">Git Workflows and Pull Requests</button>.</li>
+    <li><button type="button" class="linkbtn" data-go="3" style="background:none;border:0;padding:0;font:inherit;color:var(--link);text-decoration:underline;cursor:pointer">What Belongs in the Repository</button>.</li>
+    <li><button type="button" class="linkbtn" data-go="4" style="background:none;border:0;padding:0;font:inherit;color:var(--link);text-decoration:underline;cursor:pointer">Working With Infrastructure, Scripts, and Documentation</button>.</li>
+    <li><button type="button" class="linkbtn" data-go="5" style="background:none;border:0;padding:0;font:inherit;color:var(--link);text-decoration:underline;cursor:pointer">Automating Checks and Deployments</button>.</li>
+    <li><button type="button" class="linkbtn" data-go="6" style="background:none;border:0;padding:0;font:inherit;color:var(--link);text-decoration:underline;cursor:pointer">Comparison &amp; Scenarios</button>.</li>
+    <li><button type="button" class="linkbtn" data-go="7" style="background:none;border:0;padding:0;font:inherit;color:var(--link);text-decoration:underline;cursor:pointer">Knowledge Check</button>.</li>
+  </ol>
+
+  <h2>Introduction</h2>
+  <p>A template on a laptop is a risk. Nobody else can see it, nobody reviews it, and nobody can say which version is running in production. Exam questions about this topic ask how a team stores and changes infrastructure safely, which AWS service hosts Git repositories, how a stack updates when a template changes, and how a pipeline gets AWS access without keys.</p>
+  <p>This lesson follows FlashCart Inc. through the Problem Statement of each tab. It assumes CloudFormation from Lesson 296.1.</p>
+  <p>Use the tab list on the left, or the Previous and Next buttons, to move through the lesson. Each topic tab opens with a Problem Statement and ends with exam traps, keyword triggers, and resource links. The Knowledge Check is the last tab.</p>
+
+  <h2>Learning Objectives</h2>
+  <p>By the end of this lesson, learners will be able to:</p>
+  <ol>
+    <li>Define version control, and identify the Git concepts of repository, commit, branch, merge, remote, and pull request.</li>
+    <li>Describe the GitHub flow, and compare it with trunk-based development and Gitflow.</li>
+    <li>Use branches, commits, and pull requests to change infrastructure files, and undo a change with Git.</li>
+    <li>Decide which files to commit and which to keep out of Git, and keep secrets out of a repository.</li>
+    <li>Apply the right checks to CloudFormation files, Terraform files, Python scripts, and architecture documentation.</li>
+    <li>Explain how automated checks and deployments run from Git, including CloudFormation Git sync and access without long-lived keys.</li>
+    <li>Design a repository and a workflow for a team that manages AWS infrastructure and its documentation.</li>
+  </ol>
+
+  <h2>Acronyms and Terminology</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Acronym</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>ADR</td><td>Architectural decision record</td></tr>
+      <tr><td>API</td><td>Application programming interface</td></tr>
+      <tr><td>ARN</td><td>Amazon Resource Name</td></tr>
+      <tr><td>AWS</td><td>Amazon Web Services</td></tr>
+      <tr><td>CI</td><td>Continuous integration</td></tr>
+      <tr><td>CLI</td><td>Command line interface</td></tr>
+      <tr><td>HCL</td><td>HashiCorp Configuration Language</td></tr>
+      <tr><td>IAM</td><td>AWS Identity and Access Management</td></tr>
+      <tr><td>IaC</td><td>Infrastructure as code</td></tr>
+      <tr><td>OIDC</td><td>OpenID Connect</td></tr>
+      <tr><td>PR</td><td>Pull request</td></tr>
+      <tr><td>S3</td><td>Amazon Simple Storage Service</td></tr>
+      <tr><td>SAA-C03</td><td>AWS Certified Solutions Architect – Associate exam</td></tr>
+      <tr><td>VPC</td><td>Amazon Virtual Private Cloud</td></tr>
+      <tr><td>YAML</td><td>YAML Ain’t Markup Language</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============ TAB 1 ============ -->
+<section class="tab" id="tab1" role="tabpanel" aria-labelledby="b1">
+  <h1 class="tabh">1. Version Control With Git</h1>
+
+  <div class="problem">
+    <h2>Problem Statement</h2>
+    <p>FlashCart’s CloudFormation templates live on three laptops and on a shared drive in a folder named templates-final-v2. Last week production broke after someone deployed an older copy of a template. Nobody can say who opened a security group rule, or why.</p>
+    <p>The architects ask for one place where every infrastructure file is stored, with a full history of who changed what and why.</p>
+    <p><strong>Your challenge:</strong></p>
+    <ul>
+      <li>Explain why infrastructure files belong in version control.</li>
+      <li>Describe the main Git concepts and commands.</li>
+      <li>Choose where the Git repository lives.</li>
+    </ul>
+  </div>
+
+  <h2>1.1 Why Version Control for Infrastructure</h2>
+  <ul>
+    <li>Infrastructure as code is text, so it can be stored, compared, and restored like application code.</li>
+    <li><strong>Version control</strong> records every change to a file: what changed, who changed it, when, and why.</li>
+    <li>It gives a team <strong>history</strong>, <strong>review</strong> before a change is applied, <strong>rollback</strong> to a known good version, and <strong>collaboration</strong> without overwriting each other.</li>
+    <li>It also gives auditors an answer to “who changed the security group, and why?”</li>
+    <li>The same applies to every file type in this lesson: CloudFormation templates, Terraform files, Python scripts, and architecture documents.</li>
+  </ul>
+
+  <h2>1.2 Git Concepts</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Concept</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td>Repository (repo)</td><td>A project folder with its full history stored by Git.</td></tr>
+      <tr><td>Commit</td><td>A saved snapshot of the changes, with an author, a time, and a message.</td></tr>
+      <tr><td>Branch</td><td>A separate line of commits. You make changes on a branch without touching the main branch.</td></tr>
+      <tr><td>Merge</td><td>Combining the commits of one branch into another.</td></tr>
+      <tr><td>Remote</td><td>A copy of the repository on a server, such as GitHub, that the team shares.</td></tr>
+      <tr><td>Clone, push, pull</td><td>Copy a remote repository to your computer, send your commits to the remote, and bring the remote’s new commits to your computer.</td></tr>
+      <tr><td>Pull request (PR)</td><td>A request to merge a branch, which gives others a place to review and discuss the change first.</td></tr>
+      <tr><td>Tag</td><td>A named point in history, for example a release.</td></tr>
+    </tbody>
+  </table></div>
+  <figure>
+    <div class="figwrap">
+    <svg viewBox="0 0 960 250" role="img" aria-label="A Git history. The main branch has three commits on the left. A feature branch splits off after the third commit and has three commits of its own. The feature branch then merges back into main with a merge commit, and main continues with one more commit."><defs><marker id="gg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker></defs><text class="sv-tb" x="10" y="30">main</text><line class="sv-line" x1="60" y1="70" x2="900" y2="70"/><circle class="sv-boxb" cx="100" cy="70" r="14" stroke-width="1"/><circle class="sv-boxb" cx="220" cy="70" r="14" stroke-width="1"/><circle class="sv-boxb" cx="340" cy="70" r="14" stroke-width="1"/><circle class="sv-boxg" cx="700" cy="70" r="14" stroke-width="1"/><circle class="sv-boxb" cx="840" cy="70" r="14" stroke-width="1"/><line class="sv-line" x1="352" y1="82" x2="448" y2="158" marker-end="url(#gg)"/><line class="sv-line" x1="470" y1="170" x2="640" y2="170"/><circle class="sv-boxw" cx="460" cy="170" r="14" stroke-width="1"/><circle class="sv-boxw" cx="560" cy="170" r="14" stroke-width="1"/><circle class="sv-boxw" cx="660" cy="170" r="14" stroke-width="1"/><line class="sv-line" x1="672" y1="158" x2="690" y2="84" marker-end="url(#gg)"/><text class="sv-tb" x="470" y="215">feature/add-log-bucket</text><text class="sv-tm" x="460" y="240">Three commits, kept on their own branch until they are reviewed</text><text class="sv-tm" x="700" y="50" text-anchor="middle">merge commit</text><text class="sv-tm" x="100" y="108" text-anchor="middle">commit</text></svg>
+    </div>
+    <figcaption>Image 1a — A Git history: a feature branch splits from main, collects commits, and merges back (Original diagram for this course.)</figcaption>
+  </figure>
+
+  <h2>1.3 Core Git Commands</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>git init -b main</td><td>Creates a new repository whose first branch is named main.</td></tr>
+      <tr><td>git status</td><td>Shows which files changed and what is staged.</td></tr>
+      <tr><td>git add <file></td><td>Stages a change so that it goes into the next commit.</td></tr>
+      <tr><td>git commit -m "message"</td><td>Saves the staged changes as a commit.</td></tr>
+      <tr><td>git diff</td><td>Shows the changes that are not staged yet.</td></tr>
+      <tr><td>git log --oneline</td><td>Lists the commits, one per line.</td></tr>
+      <tr><td>git switch -c <branch></td><td>Creates a branch and switches to it.</td></tr>
+      <tr><td>git merge <branch></td><td>Merges a branch into the current branch.</td></tr>
+      <tr><td>git push and git pull</td><td>Send commits to the remote and bring new commits from it.</td></tr>
+      <tr><td>git revert <commit></td><td>Adds a new commit that undoes an earlier commit, and keeps the history.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>1.4 Where the Repository Lives</h2>
+  <ul>
+    <li>A team shares a repository on a Git host. Common hosts are GitHub, GitLab, and Bitbucket.</li>
+    <li><strong>AWS CodeCommit</strong> is the managed Git service from AWS, with access controlled by IAM. AWS closed it to new customers in 2024, and then returned it to general availability on November 24, 2025, so new customers can create repositories again. Older books and slides still say that it is closed.</li>
+    <li>Whichever host you choose, the Git workflow in this lesson is the same.</li>
+  </ul>
+
+  <div class="qbox">
+    <h3>Exam-Style Question</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> A company stores its CloudFormation templates on engineers’ laptops. Production broke after an engineer deployed an outdated copy. The company needs a history of changes and a way to review a change before it is deployed. Which solution fits best?</p>
+    <ul class="opts">
+      <li><strong>A.</strong> Store the templates in a Git repository, and require reviewed pull requests for changes.</li>
+      <li><strong>B.</strong> Store the templates in a shared folder on an EC2 instance, and name each copy with a date.</li>
+      <li><strong>C.</strong> Email the templates to the team after each change.</li>
+      <li><strong>D.</strong> Store the templates only in the CloudFormation console.</li>
+    </ul>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Correct answer: A.</strong> A Git repository records every change with its author and reason, and pull requests give reviewers a place to approve a change before it is merged and deployed.</p>
+<div class="tw"><table>
+    <thead><tr><th>Option</th><th>Result</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>Correct</td><td>Git gives history, review, and rollback.</td></tr>
+      <tr><td>B</td><td>Incorrect</td><td>Dated file names are manual, and they do not record who changed what or why.</td></tr>
+      <tr><td>C</td><td>Incorrect</td><td>Email gives no history, no review workflow, and no single source of truth.</td></tr>
+      <tr><td>D</td><td>Incorrect</td><td>The console shows the template of a deployed stack, but it is not a version history with review.</td></tr>
+    </tbody>
+  </table></div>
+    </details>
+  </div>
+  <div class="callout warn">
+    <h4>Exam Trap</h4>
+    <p>Remember these points:</p>
+    <ul>
+      <li>Version control gives history, review, rollback, and collaboration for every infrastructure file.</li>
+      <li>A branch lets you change files without touching main. A pull request is the place for review before a merge.</li>
+      <li>AWS CodeCommit is the AWS-managed Git service. It is available to new customers again since November 24, 2025.</li>
+    </ul>
+  </div>
+  <div class="callout tip">
+    <h4>Memory Hook</h4>
+    <p>If it is not in Git, it did not happen, and nobody can undo it.</p>
+  </div>
+  <div class="callout exam">
+    <h4>SAA-C03 Keyword Triggers</h4>
+    <p><strong>Trigger 1:</strong> “Store infrastructure templates with history and review”<br>→ A Git repository with pull requests</p>
+    <p><strong>Trigger 2:</strong> “AWS-managed Git repository with IAM access control”<br>→ AWS CodeCommit</p>
+    <p><strong>Trigger 3:</strong> “Undo a bad change and keep the history”<br>→ git revert</p>
+  </div>
+  <div class="res">
+    <h2>Useful Resources</h2>
+    <ul>
+      <li><span class="lbl">Docs</span> <a href="https://git-scm.com/book" target="_blank" rel="noopener">Pro Git, the free Git book</a></li>
+      <li><span class="lbl">AWS</span> <a href="https://aws.amazon.com/blogs/devops/aws-codecommit-returns-to-general-availability" target="_blank" rel="noopener">AWS CodeCommit returns to general availability</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ TAB 2 ============ -->
+<section class="tab" id="tab2" role="tabpanel" aria-labelledby="b2">
+  <h1 class="tabh">2. Git Workflows and Pull Requests</h1>
+
+  <div class="problem">
+    <h2>Problem Statement</h2>
+    <p>Two FlashCart engineers changed the same template on the same day, and the second one overwrote the first. The team lead wants every change reviewed before it reaches production, and a quick way to undo a bad change.</p>
+    <p><strong>Your challenge:</strong></p>
+    <ul>
+      <li>Describe the steps of the GitHub flow.</li>
+      <li>Compare the GitHub flow with trunk-based development and Gitflow.</li>
+      <li>Protect the main branch, and undo a change safely.</li>
+    </ul>
+  </div>
+
+  <h2>2.1 The GitHub Flow</h2>
+  <ul>
+    <li>The <strong>GitHub flow</strong> is a lightweight, branch-based workflow. GitHub itself uses it for its site policy, documentation, and roadmap, so it suits documents as well as code.</li>
+    <li>Your <strong>branch</strong> is a safe place to make changes. Your changes do not reach the default branch until you merge.</li>
+  </ul>
+  <figure>
+    <div class="figwrap">
+    <svg viewBox="0 0 960 170" role="img" aria-label="The GitHub flow in seven steps. One, create a branch from main. Two, commit small changes. Three, open a pull request and describe it. Four, review the pull request and let the automated checks run. Five, merge into main. Six, deploy from main. Seven, delete the branch. The review and check step and the deploy step are marked as automated or shared with tools."><defs><marker id="gf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker></defs><rect class="sv-box" x="6" y="40" width="120" height="80" rx="8"/><text class="sv-tb" x="66" y="76.0" text-anchor="middle">1. Branch</text><text class="sv-t" x="66" y="94.0" text-anchor="middle">from main</text><rect class="sv-box" x="144" y="40" width="120" height="80" rx="8"/><text class="sv-tb" x="204" y="76.0" text-anchor="middle">2. Commit</text><text class="sv-t" x="204" y="94.0" text-anchor="middle">small changes</text><rect class="sv-box" x="282" y="40" width="120" height="80" rx="8"/><text class="sv-tb" x="342" y="76.0" text-anchor="middle">3. Pull request</text><text class="sv-t" x="342" y="94.0" text-anchor="middle">describe it</text><rect class="sv-boxg" x="420" y="40" width="120" height="80" rx="8"/><text class="sv-tb" x="480" y="76.0" text-anchor="middle">4. Review</text><text class="sv-t" x="480" y="94.0" text-anchor="middle">and checks</text><rect class="sv-box" x="558" y="40" width="120" height="80" rx="8"/><text class="sv-tb" x="618" y="76.0" text-anchor="middle">5. Merge</text><text class="sv-t" x="618" y="94.0" text-anchor="middle">into main</text><rect class="sv-boxg" x="696" y="40" width="120" height="80" rx="8"/><text class="sv-tb" x="756" y="76.0" text-anchor="middle">6. Deploy</text><text class="sv-t" x="756" y="94.0" text-anchor="middle">from main</text><rect class="sv-box" x="834" y="40" width="120" height="80" rx="8"/><text class="sv-tb" x="894" y="76.0" text-anchor="middle">7. Delete</text><text class="sv-t" x="894" y="94.0" text-anchor="middle">the branch</text><line class="sv-line" x1="127" y1="80" x2="142" y2="80" marker-end="url(#gf)"/><line class="sv-line" x1="265" y1="80" x2="280" y2="80" marker-end="url(#gf)"/><line class="sv-line" x1="403" y1="80" x2="418" y2="80" marker-end="url(#gf)"/><line class="sv-line" x1="541" y1="80" x2="556" y2="80" marker-end="url(#gf)"/><line class="sv-line" x1="679" y1="80" x2="694" y2="80" marker-end="url(#gf)"/><line class="sv-line" x1="817" y1="80" x2="832" y2="80" marker-end="url(#gf)"/><text class="sv-tm" x="480" y="154" text-anchor="middle">Green steps are partly or fully done by automated tools.</text></svg>
+    </div>
+    <figcaption>Image 2a — The GitHub flow in seven steps (Original diagram for this course.)</figcaption>
+  </figure>
+  <div class="tw"><table>
+    <thead><tr><th>Step</th><th>What you do</th></tr></thead>
+    <tbody>
+      <tr><td>1. Create a branch</td><td>Use a short, descriptive name, such as add-s3-log-bucket.</td></tr>
+      <tr><td>2. Make changes and commit</td><td>Commit and push to your branch. Give each commit a descriptive message.</td></tr>
+      <tr><td>3. Create a pull request</td><td>Summarize the changes and the problem that they solve. Link the issue if there is one. Mark it as a draft if you want early feedback.</td></tr>
+      <tr><td>4. Address review comments</td><td>Reviewers comment on the whole pull request or on single lines. You keep committing to the branch, and the pull request updates.</td></tr>
+      <tr><td>5. Merge</td><td>When the pull request is approved and the checks pass, merge it into the default branch.</td></tr>
+      <tr><td>6. Deploy</td><td>A pipeline or a service applies the merged change. See tab 5.</td></tr>
+      <tr><td>7. Delete the branch</td><td>This shows that the work is done and prevents old branches from being used by accident. The history stays.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>2.2 Other Branching Models</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Model</th><th>How it works</th><th>Fits</th></tr></thead>
+    <tbody>
+      <tr><td>GitHub flow</td><td>One main branch that is always deployable. Short-lived feature branches and pull requests.</td><td>Most teams, and infrastructure and documentation repositories.</td></tr>
+      <tr><td>Trunk-based development</td><td>Everyone merges small changes to main very often, in short-lived branches or directly. Feature flags hide unfinished work.</td><td>Teams with strong automated tests and frequent releases.</td></tr>
+      <tr><td>Gitflow</td><td>Long-lived main and develop branches, plus feature, release, and hotfix branches.</td><td>Products with scheduled releases and several versions in the field.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>2.3 Good Commits and Pull Requests</h2>
+  <ul>
+    <li>Give each commit a <strong>descriptive message</strong>, for example “Allow HTTPS from the load balancer security group”.</li>
+    <li>Make each commit <strong>one isolated, complete change</strong>. If you rename a variable in one commit and add tests in another, you can later revert the rename and keep the tests.</li>
+    <li>Make a <strong>separate branch for each set of unrelated changes</strong>. It is easier for reviewers to give feedback, and a delay in one change does not hold up the others.</li>
+    <li>Explain the <strong>what and why</strong> in the pull request. For infrastructure, add what the change does in AWS and what the risk is, for example whether a resource is replaced.</li>
+  </ul>
+
+  <h2>2.4 Protecting the Main Branch</h2>
+  <ul>
+    <li>A <strong>protected branch</strong> has rules that every change must follow. On GitHub, you can require pull requests with a number of approving reviews, and require status checks to pass before a merge.</li>
+    <li>You can require a review from the <strong>code owner</strong> of the files that the pull request changes. For example, the network team owns the network templates.</li>
+    <li>You can require a <strong>linear history</strong>, which stops merge commits and can make changes easier to reverse.</li>
+    <li>By default, GitHub blocks force pushes to a protected branch and blocks deleting it.</li>
+    <li>When a person pushes new code to an approved pull request, the approval can be dismissed, so the reviewer sees the new change.</li>
+  </ul>
+
+  <h2>2.5 Undoing a Change</h2>
+  <ul>
+    <li>On a shared branch, use <strong>git revert</strong>. It adds a new commit that reverses an earlier commit, and the history stays complete. You then deploy the reverted version.</li>
+    <li>Do not rewrite shared history with a force push. Other people’s copies would no longer match.</li>
+    <li>A bad change on your own branch is easy: commit a fix, or delete the branch.</li>
+  </ul>
+
+  <h2>2.6 Practice: A Local Git Workflow</h2>
+  <ul>
+    <li>You can practice in AWS CloudShell, or in any terminal where Git is installed. You need no GitHub account. Create a small CloudFormation template, and follow the commands below.</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code>git init -b main
+mkdir templates
+# Create templates/network.yaml in your editor, then:
+git add templates/network.yaml
+git commit -m "Add network template"
+
+git switch -c add-s3-log-bucket
+# Edit templates/network.yaml to add an S3 log bucket, then:
+git diff
+git add templates/network.yaml
+git commit -m "Add S3 log bucket with versioning"
+
+git switch main
+git merge --no-ff add-s3-log-bucket
+git log --oneline
+
+# Undo the merge by adding a new commit that reverses it:
+git revert -m 1 HEAD
+</code></pre>
+  <ul>
+    <li>These commands were written for this course. Check each result with <code>git log --oneline</code> and <code>git status</code>.</li>
+    <li>The option <code>--no-ff</code> makes Git create a merge commit even when it could simply move the branch forward. The last command reverses that merge commit. The <code>-m 1</code> option tells Git to keep the first parent, which is the main branch.</li>
+  </ul>
+
+  <div class="qbox">
+    <h3>Exam-Style Question</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> A team wants every change to its production templates to be reviewed and tested before it is merged, and wants engineers to be unable to push directly to the main branch. Which Git practice fits best?</p>
+    <ul class="opts">
+      <li><strong>A.</strong> Protect the main branch, and require pull requests with approving reviews and passing status checks.</li>
+      <li><strong>B.</strong> Let each engineer push directly to main, and review the changes later.</li>
+      <li><strong>C.</strong> Keep one long-lived branch for each engineer, and merge them every month.</li>
+      <li><strong>D.</strong> Disable pull requests, and send the changes by email.</li>
+    </ul>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Correct answer: A.</strong> Branch protection rules can require pull requests, a number of approving reviews, and passing status checks before a merge.</p>
+<div class="tw"><table>
+    <thead><tr><th>Option</th><th>Result</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>Correct</td><td>The rules are enforced by the Git host, so nobody skips them by accident.</td></tr>
+      <tr><td>B</td><td>Incorrect</td><td>A review after the push cannot prevent a bad change from reaching main.</td></tr>
+      <tr><td>C</td><td>Incorrect</td><td>Long-lived personal branches cause large merges and conflicts.</td></tr>
+      <tr><td>D</td><td>Incorrect</td><td>Email has no review workflow, and no checks run.</td></tr>
+    </tbody>
+  </table></div>
+    </details>
+  </div>
+  <div class="callout warn">
+    <h4>Exam Trap</h4>
+    <p>Remember these points:</p>
+    <ul>
+      <li>The GitHub flow: branch, commit, pull request, review and checks, merge, deploy, and delete the branch.</li>
+      <li>Protect main with required reviews and required status checks. Do not allow direct pushes or force pushes.</li>
+      <li>Undo a change on a shared branch with git revert. Do not rewrite shared history.</li>
+    </ul>
+  </div>
+  <div class="callout tip">
+    <h4>Memory Hook</h4>
+    <p>Branch, review, merge, deploy. Revert, never rewrite.</p>
+  </div>
+  <div class="callout exam">
+    <h4>SAA-C03 Keyword Triggers</h4>
+    <p><strong>Trigger 1:</strong> “Every change must be reviewed before it reaches main”<br>→ Branch protection with required pull request reviews</p>
+    <p><strong>Trigger 2:</strong> “Block a merge until tests pass”<br>→ Required status checks</p>
+    <p><strong>Trigger 3:</strong> “Reverse a bad change and keep the history”<br>→ git revert</p>
+    <p><strong>Trigger 4:</strong> “Short-lived branches and pull requests with an always-deployable main”<br>→ GitHub flow</p>
+  </div>
+  <div class="res">
+    <h2>Useful Resources</h2>
+    <ul>
+      <li><span class="lbl">GitHub</span> <a href="https://docs.github.com/en/get-started/using-github/github-flow" target="_blank" rel="noopener">GitHub flow</a></li>
+      <li><span class="lbl">GitHub</span> <a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches" target="_blank" rel="noopener">About protected branches</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ TAB 3 ============ -->
+<section class="tab" id="tab3" role="tabpanel" aria-labelledby="b3">
+  <h1 class="tabh">3. What Belongs in the Repository</h1>
+
+  <div class="problem">
+    <h2>Problem Statement</h2>
+    <p>A contractor pushed a Python script to a public repository, and the script contained an AWS access key. Another engineer committed a Terraform state file. The architecture diagram in the company wiki shows a database that was removed months ago.</p>
+    <p>The team lead asks what belongs in the repository, what must never be in it, and how the documents can stay accurate.</p>
+    <p><strong>Your challenge:</strong></p>
+    <ul>
+      <li>Lay out a repository for infrastructure code, scripts, and documents.</li>
+      <li>Decide which files to commit and which to ignore.</li>
+      <li>Keep secrets out of Git, and know what to do when one gets in.</li>
+    </ul>
+  </div>
+
+  <h2>3.1 A Repository Layout</h2>
+  <ul>
+    <li>Keep the infrastructure, the scripts, and the documents that describe them <strong>in the same repository</strong>, so that one pull request can change all of them together.</li>
+    <li>Use one folder for each kind of file, and a README that tells a new person where to start.</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code>flashcart-infra/
+  README.md
+  .gitignore
+  docs/
+    architecture.md
+    decisions/
+      0001-use-cloudformation-for-network.md
+  cloudformation/
+    network.yaml
+    stack-deployment/
+      network-dev.yaml
+  terraform/
+    modules/
+    environments/
+      dev/
+        main.tf
+        .terraform.lock.hcl
+  scripts/
+    requirements.txt
+    stack_status.py
+</code></pre>
+  <ul>
+    <li>This layout was written for this course. Many teams use separate repositories for separate teams or services. The idea is the same: a clear place for each kind of file.</li>
+  </ul>
+
+  <h2>3.2 What to Commit, and What Never To</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Commit it</th><th>Never commit it</th></tr></thead>
+    <tbody>
+      <tr><td>CloudFormation templates and stack deployment files</td><td>AWS access keys, passwords, tokens, and private keys such as .pem files</td></tr>
+      <tr><td>Terraform files (.tf) and the dependency lock file .terraform.lock.hcl</td><td>Terraform state files (.tfstate), which can hold sensitive values in plain text</td></tr>
+      <tr><td>Python scripts, tests, and requirements.txt</td><td>Virtual environments, caches, and compiled files</td></tr>
+      <tr><td>README files, architecture documents, diagrams as code, and decision records</td><td>Variable files that hold secrets, such as .tfvars, and .env files</td></tr>
+      <tr><td>An example variable file with no real values, such as example.tfvars</td><td>Large generated files that you can rebuild</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>3.3 The .gitignore File</h2>
+  <ul>
+    <li>A <strong>.gitignore</strong> file lists the files that Git must not track. Commit it, so that everyone ignores the same files.</li>
+    <li>It stops accidents, but it does not remove a file that is already tracked.</li>
+    <li>Do not ignore .terraform.lock.hcl. Terraform recommends that you keep it in version control so that everyone uses the same provider versions.</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code># Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!example.tfvars
+override.tf
+override.tf.json
+*_override.tf
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Secrets and keys
+.env
+*.pem
+*.key
+</code></pre>
+
+  <h2>3.4 Keeping Secrets Out of Git</h2>
+  <ul>
+    <li>Keep secrets in <strong>AWS Secrets Manager</strong> or <strong>AWS Systems Manager Parameter Store</strong>, and let the template or the script read them at run time. CloudFormation dynamic references do this for templates (Lesson 296.1).</li>
+    <li>Run code with an <strong>IAM role</strong> or temporary credentials, and not with a stored access key.</li>
+    <li>Use <strong>git-secrets</strong>, an open-source tool from AWS Labs, to stop a commit that contains a secret. Run <code>git secrets --register-aws</code> to add the AWS patterns, <code>git secrets --scan</code> to scan the files, and <code>git secrets --scan-history</code> to scan the history.</li>
+    <li>Turn on secret scanning with push protection on your Git host, if it offers it.</li>
+    <li><strong>If a key is committed:</strong> deleting the commit is not enough, because other copies and forks can still hold it. Deactivate the access key in IAM at once, create a new one if it is needed, and review what the key did.</li>
+  </ul>
+
+  <h2>3.5 Keeping Documentation Accurate</h2>
+  <ul>
+    <li>Treat architecture documentation as <strong>docs as code</strong>: write it in plain text, such as Markdown, keep it in the repository, and change it in the same pull request as the infrastructure.</li>
+    <li>A pull request that changes the infrastructure should show a change in the documents, or say why none is needed. Reviewers can check this.</li>
+    <li>A document in a wiki, without history, drifts away from the real infrastructure. A document in Git is reviewed with every change.</li>
+  </ul>
+
+  <div class="qbox">
+    <h3>Exam-Style Question</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> A developer accidentally committed an IAM access key to a public repository. What should the company do first?</p>
+    <ul class="opts">
+      <li><strong>A.</strong> Deactivate the access key in IAM, and then create a new key if one is still needed.</li>
+      <li><strong>B.</strong> Delete the commit from the repository, and keep using the key.</li>
+      <li><strong>C.</strong> Make the repository private, and keep using the key.</li>
+      <li><strong>D.</strong> Rename the access key in the code.</li>
+    </ul>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Correct answer: A.</strong> A leaked key must be treated as compromised. Other copies and forks can still hold it, so deactivate it in IAM first.</p>
+<div class="tw"><table>
+    <thead><tr><th>Option</th><th>Result</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>Correct</td><td>This stops anyone from using the leaked key.</td></tr>
+      <tr><td>B</td><td>Incorrect</td><td>Deleting the commit does not remove copies, forks, or the history that others cloned.</td></tr>
+      <tr><td>C</td><td>Incorrect</td><td>The key might already have been copied.</td></tr>
+      <tr><td>D</td><td>Incorrect</td><td>Renaming the key in the code does not change the key.</td></tr>
+    </tbody>
+  </table></div>
+    </details>
+  </div>
+  <div class="callout warn">
+    <h4>Exam Trap</h4>
+    <p>Remember these points:</p>
+    <ul>
+      <li>Never commit access keys, passwords, private keys, or Terraform state. Use .gitignore, git-secrets, and secret scanning.</li>
+      <li>A leaked key is compromised. Deactivate it in IAM. Deleting the commit is not enough.</li>
+      <li>Commit .terraform.lock.hcl. Do not commit .tfstate files or .tfvars files that hold secrets.</li>
+    </ul>
+  </div>
+  <div class="callout tip">
+    <h4>Memory Hook</h4>
+    <p>Ignore the state, hide the keys, keep the lock file, and keep the docs next to the code.</p>
+  </div>
+  <div class="callout exam">
+    <h4>SAA-C03 Keyword Triggers</h4>
+    <p><strong>Trigger 1:</strong> “Prevent credentials from being committed”<br>→ git-secrets, and secret scanning with push protection</p>
+    <p><strong>Trigger 2:</strong> “A key was pushed to a public repository”<br>→ Deactivate the key in IAM</p>
+    <p><strong>Trigger 3:</strong> “Where to keep a database password for a template”<br>→ AWS Secrets Manager with a dynamic reference</p>
+    <p><strong>Trigger 4:</strong> “Run a script on AWS without stored keys”<br>→ An IAM role or temporary credentials</p>
+  </div>
+  <div class="res">
+    <h2>Useful Resources</h2>
+    <ul>
+      <li><span class="lbl">AWS</span> <a href="https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/scan-git-repositories-for-sensitive-information-and-security-issues-by-using-git-secrets.html" target="_blank" rel="noopener">Scan Git repositories for sensitive information by using git-secrets</a></li>
+      <li><span class="lbl">Docs</span> <a href="https://developer.hashicorp.com/terraform" target="_blank" rel="noopener">Terraform documentation</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ TAB 4 ============ -->
+<section class="tab" id="tab4" role="tabpanel" aria-labelledby="b4">
+  <h1 class="tabh">4. Working With Infrastructure, Scripts, and Documentation</h1>
+
+  <div class="problem">
+    <h2>Problem Statement</h2>
+    <p>FlashCart’s repository will hold CloudFormation templates, Terraform modules, Python scripts, and architecture documents. Each kind of file fails in a different way, so each needs its own checks and its own review questions.</p>
+    <p><strong>Your challenge:</strong></p>
+    <ul>
+      <li>Check CloudFormation files and deploy them from Git.</li>
+      <li>Handle Terraform files and state safely in a team.</li>
+      <li>Write Python scripts that are safe to keep in Git, and keep architecture documents accurate.</li>
+    </ul>
+  </div>
+
+  <h2>4.1 CloudFormation Files</h2>
+  <ul>
+    <li>Run <strong>cfn-lint</strong> to check a template against the CloudFormation specification and best practices. AWS describes using it as a Git pre-commit hook, as an editor plugin, and as a step in a build pipeline. Install it with <code>pip install cfn-lint</code>, and run <code>cfn-lint template.yaml</code>.</li>
+    <li>Run <code>aws cloudformation validate-template</code> to check the template structure and syntax. It does not prove that the stack will be created.</li>
+    <li>Preview the effect with a <strong>change set</strong> (Lesson 296.1) before you merge, so that the reviewer sees what is added, changed, or replaced.</li>
+    <li>Keep the <strong>stack deployment file</strong> with the template. It holds the parameters for one environment.</li>
+    <li><strong>CloudFormation Git sync</strong> monitors a repository for changes to the template file and the deployment file, and updates the stack when you commit a change (tab 5).</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code>template-file-path: cloudformation/network.yaml
+parameters:
+  Environment: dev
+tags:
+  Project: FlashCart
+</code></pre>
+  <ul>
+    <li>This deployment file follows the structure in the CloudFormation Git sync documentation: the path of the template, the parameters, and the tags. The values are examples.</li>
+  </ul>
+
+  <h2>4.2 Terraform Files</h2>
+  <ul>
+    <li>Commit the .tf files and the <strong>.terraform.lock.hcl</strong> dependency lock file. Do not commit the .terraform folder, the state files, or variable files that hold secrets.</li>
+    <li><strong>State</strong> records which real resources Terraform manages. It can hold sensitive values in plain text, and Git cannot lock it, so two people could apply at the same time and corrupt it.</li>
+    <li>Store state in a <strong>remote backend</strong>, such as an S3 bucket with encryption and versioning. With <code>use_lockfile = true</code>, the S3 backend locks the state while one person applies. Native S3 locking needs Terraform 1.10 or later.</li>
+    <li>Run <code>terraform fmt -check</code> and <code>terraform validate</code> on every pull request, and run <code>terraform plan</code> so that the reviewer sees the planned changes.</li>
+    <li>Apply from the main branch after the merge, and not from a laptop.</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code>terraform {
+  backend "s3" {
+    bucket       = "flashcart-terraform-state"
+    key          = "dev/network/terraform.tfstate"
+    region       = "us-east-1"
+    encrypt      = true
+    use_lockfile = true
+  }
+}
+</code></pre>
+  <ul>
+    <li>This sample was written for this course. The bucket name and key are examples.</li>
+  </ul>
+
+  <h2>4.3 Python Scripts</h2>
+  <ul>
+    <li>Commit the script, its tests, and <strong>requirements.txt</strong>, so that everyone installs the same libraries. Keep the virtual environment out of Git.</li>
+    <li>Do not put an access key, a password, or an account-specific value in the script. Use the default credential chain of the AWS SDK for Python (boto3), which finds a role, a profile, or temporary credentials. Read other settings from environment variables or from Parameter Store.</li>
+    <li>Give the script the least privilege that it needs, and document which IAM permissions it requires.</li>
+    <li>In a pull request, check what the script changes in AWS, and whether it is safe to run twice.</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code>import boto3
+
+
+def stack_status(stack_name):
+    # No keys in the code. boto3 uses the default credential chain,
+    # for example a role, a profile, or temporary credentials.
+    cfn = boto3.client("cloudformation")
+    return cfn.describe_stacks(StackName=stack_name)["Stacks"][0]["StackStatus"]
+
+
+if __name__ == "__main__":
+    print(stack_status("flashcart-dev"))
+</code></pre>
+  <ul>
+    <li>This script was written for this course. It has no keys in it.</li>
+  </ul>
+
+  <h2>4.4 Architecture Documentation</h2>
+  <ul>
+    <li>Write the documents in plain text. A <strong>README</strong> explains the purpose and how to use the repository. A <strong>docs</strong> folder holds the architecture description.</li>
+    <li>Record important choices as <strong>architectural decision records (ADRs)</strong>. An ADR captures the decision, the context, and the considerations. AWS Prescriptive Guidance describes the ADR process, and it names three anti-patterns: no decision is made, a decision has no justification, and a decision is not recorded.</li>
+    <li>Draw diagrams <strong>as code</strong>, so that a change to a diagram is a readable change in a pull request. GitHub renders Mermaid diagrams that you write in a Markdown file.</li>
+    <li>When a picture exported from a drawing tool is better, commit the image and the source file together, and write alt text.</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code># 0001. Use CloudFormation for the network layer
+
+Status: Accepted
+Date: 2026-10-30
+
+## Context
+The team needs a repeatable network for dev, test, and prod, and the team already uses CloudFormation.
+
+## Decision
+Define the VPC, subnets, and route tables in CloudFormation templates in this repository.
+
+## Consequences
+Network changes go through pull requests. Terraform is not used for the network layer.
+</code></pre>
+  <pre class="flowcode" tabindex="0"><code>```mermaid
+flowchart LR
+  User --&gt; ALB[Application Load Balancer]
+  ALB --&gt; ECS[ECS service]
+  ECS --&gt; RDS[(RDS database)]
+```
+</code></pre>
+  <ul>
+    <li>Both samples were written for this course.</li>
+  </ul>
+
+  <h2>4.5 What a Reviewer Checks</h2>
+  <div class="tw"><table>
+    <thead><tr><th>File type</th><th>Automated check</th><th>Reviewer question</th></tr></thead>
+    <tbody>
+      <tr><td>CloudFormation template</td><td>cfn-lint, validate-template, and a change set</td><td>Does the change set replace or delete anything? Are secrets kept out? Is DeletionPolicy right for data stores?</td></tr>
+      <tr><td>Terraform files</td><td>terraform fmt, validate, and plan</td><td>What does the plan add, change, or destroy? Is the state remote and locked?</td></tr>
+      <tr><td>Python script</td><td>A linter, unit tests, and a secret scan</td><td>Does it run with a role and no keys? Is it safe to run twice? What AWS resources does it change?</td></tr>
+      <tr><td>Documentation</td><td>A link and spelling check, if the team has one</td><td>Does the document match the change? Is there an ADR for a major decision?</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="qbox">
+    <h3>Exam-Style Question</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> Two engineers run terraform apply on the same project at the same time, and the state file is corrupted. The state is stored in a local file that is committed to Git. What should the team do to prevent this?</p>
+    <ul class="opts">
+      <li><strong>A.</strong> Store the state in an S3 backend with state locking enabled, and stop committing state files to Git.</li>
+      <li><strong>B.</strong> Commit the state file after every apply, and merge carefully.</li>
+      <li><strong>C.</strong> Run terraform apply only on Fridays.</li>
+      <li><strong>D.</strong> Email the state file to the other engineer before each apply.</li>
+    </ul>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Correct answer: A.</strong> A remote backend such as S3 with locking prevents two applies from writing the state at the same time, and it keeps sensitive state out of Git.</p>
+<div class="tw"><table>
+    <thead><tr><th>Option</th><th>Result</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>Correct</td><td>The backend locks the state while one person applies.</td></tr>
+      <tr><td>B</td><td>Incorrect</td><td>Git cannot lock the state, and the file can hold sensitive values.</td></tr>
+      <tr><td>C</td><td>Incorrect</td><td>A schedule does not prevent concurrent applies.</td></tr>
+      <tr><td>D</td><td>Incorrect</td><td>Email is manual and insecure, and it does not lock anything.</td></tr>
+    </tbody>
+  </table></div>
+    </details>
+  </div>
+  <div class="callout warn">
+    <h4>Exam Trap</h4>
+    <p>Remember these points:</p>
+    <ul>
+      <li>CloudFormation files: cfn-lint, validate-template, and a change set in the pull request. Terraform files: fmt, validate, and plan.</li>
+      <li>Terraform state goes in a remote backend with locking, such as S3 with use_lockfile, and never in Git.</li>
+      <li>Python scripts use a role or temporary credentials and no stored keys. Architecture documents live in the repository and change with the infrastructure.</li>
+    </ul>
+  </div>
+  <div class="callout tip">
+    <h4>Memory Hook</h4>
+    <p>Lint the template, plan the Terraform, role the script, and diff the docs.</p>
+  </div>
+  <div class="callout exam">
+    <h4>SAA-C03 Keyword Triggers</h4>
+    <p><strong>Trigger 1:</strong> “Check a CloudFormation template before a merge”<br>→ cfn-lint, validate-template, and a change set</p>
+    <p><strong>Trigger 2:</strong> “Share Terraform state in a team on AWS”<br>→ S3 backend with encryption, versioning, and locking</p>
+    <p><strong>Trigger 3:</strong> “Record why an architecture decision was made”<br>→ Architectural decision record in the repository</p>
+  </div>
+  <div class="res">
+    <h2>Useful Resources</h2>
+    <ul>
+      <li><span class="lbl">AWS</span> <a href="https://aws.amazon.com/blogs/mt/git-pre-commit-validation-of-aws-cloudformation-templates-with-cfn-lint/" target="_blank" rel="noopener">Git pre-commit validation of AWS CloudFormation templates with cfn-lint</a></li>
+      <li><span class="lbl">AWS</span> <a href="https://docs.aws.amazon.com/prescriptive-guidance/latest/architectural-decision-records/welcome.html" target="_blank" rel="noopener">Using architectural decision records</a></li>
+      <li><span class="lbl">Docs</span> <a href="https://developer.hashicorp.com/terraform" target="_blank" rel="noopener">Terraform documentation</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ TAB 5 ============ -->
+<section class="tab" id="tab5" role="tabpanel" aria-labelledby="b5">
+  <h1 class="tabh">5. Automating Checks and Deployments</h1>
+
+  <div class="problem">
+    <h2>Problem Statement</h2>
+    <p>Reviewers at FlashCart keep finding the same mistakes by eye: an open port, a missing tag, an unformatted file. Management wants these checks to run automatically before a pull request can merge.</p>
+    <p>Management also wants deployments to run from the main branch, without AWS access keys stored in the pipeline.</p>
+    <p><strong>Your challenge:</strong></p>
+    <ul>
+      <li>Run checks on the developer’s computer and on every pull request.</li>
+      <li>Deploy from Git, including with CloudFormation Git sync.</li>
+      <li>Give a pipeline AWS access without long-lived keys, and roll back a bad change.</li>
+    </ul>
+  </div>
+
+  <h2>5.1 The Checked Path From Change to Deployment</h2>
+  <figure>
+    <div class="figwrap">
+    <svg viewBox="0 0 960 170" role="img" aria-label="A checked path from a change to deployment. A developer pushes a branch. Automated lint and secret scans run. A plan or change set shows what would change. A reviewer approves the pull request. The change merges into main. The deployment runs from main. The automated steps are lint and scan, plan, and deploy."><defs><marker id="pp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="sv-arrow"/></marker></defs><rect class="sv-box" x="6" y="40" width="140" height="80" rx="8"/><text class="sv-tb" x="76" y="76.0" text-anchor="middle">1. Push</text><text class="sv-t" x="76" y="94.0" text-anchor="middle">a branch</text><rect class="sv-boxg" x="164" y="40" width="140" height="80" rx="8"/><text class="sv-tb" x="234" y="76.0" text-anchor="middle">2. Lint and scan</text><text class="sv-t" x="234" y="94.0" text-anchor="middle">automated</text><rect class="sv-boxg" x="322" y="40" width="140" height="80" rx="8"/><text class="sv-tb" x="392" y="76.0" text-anchor="middle">3. Plan</text><text class="sv-t" x="392" y="94.0" text-anchor="middle">what would change</text><rect class="sv-box" x="480" y="40" width="140" height="80" rx="8"/><text class="sv-tb" x="550" y="76.0" text-anchor="middle">4. Review</text><text class="sv-t" x="550" y="94.0" text-anchor="middle">a person approves</text><rect class="sv-box" x="638" y="40" width="140" height="80" rx="8"/><text class="sv-tb" x="708" y="76.0" text-anchor="middle">5. Merge</text><text class="sv-t" x="708" y="94.0" text-anchor="middle">into main</text><rect class="sv-boxg" x="796" y="40" width="140" height="80" rx="8"/><text class="sv-tb" x="866" y="76.0" text-anchor="middle">6. Deploy</text><text class="sv-t" x="866" y="94.0" text-anchor="middle">from main</text><line class="sv-line" x1="147" y1="80" x2="162" y2="80" marker-end="url(#pp)"/><line class="sv-line" x1="305" y1="80" x2="320" y2="80" marker-end="url(#pp)"/><line class="sv-line" x1="463" y1="80" x2="478" y2="80" marker-end="url(#pp)"/><line class="sv-line" x1="621" y1="80" x2="636" y2="80" marker-end="url(#pp)"/><line class="sv-line" x1="779" y1="80" x2="794" y2="80" marker-end="url(#pp)"/><text class="sv-tm" x="480" y="154" text-anchor="middle">Automated steps catch routine mistakes, so reviewers can focus on design and risk.</text></svg>
+    </div>
+    <figcaption>Image 5a — A checked path from a change to deployment (Original diagram for this course.)</figcaption>
+  </figure>
+
+  <h2>5.2 Checks on the Developer’s Computer</h2>
+  <ul>
+    <li>A <strong>Git hook</strong> is a script that Git runs at a point in the workflow. A <strong>pre-commit</strong> hook runs before a commit is created, and it stops the commit if the script fails.</li>
+    <li>A pre-commit hook catches simple problems early, before a reviewer sees them.</li>
+    <li>Hooks run only on the computer where they are installed, so they help but do not enforce. Repeat the same checks in the pull request.</li>
+  </ul>
+  <pre class="flowcode" tabindex="0"><code>#!/bin/sh
+# Save as .git/hooks/pre-commit and make it executable.
+cfn-lint cloudformation/*.yaml || exit 1
+terraform fmt -check -recursive terraform || exit 1
+git secrets --scan || exit 1
+</code></pre>
+  <ul>
+    <li>This hook was written for this course. It needs cfn-lint, Terraform, and git-secrets to be installed.</li>
+  </ul>
+
+  <h2>5.3 Checks on Every Pull Request</h2>
+  <ul>
+    <li>A <strong>continuous integration (CI)</strong> workflow runs on each pull request, and its result appears as a <strong>status check</strong>. With branch protection, the merge is blocked until the required checks pass.</li>
+    <li>The checks are the same as in section 4.5: lint, validate, plan or change set, tests, and a secret scan.</li>
+  </ul>
+  <div class="tw"><table>
+    <thead><tr><th>Check</th><th>Catches</th></tr></thead>
+    <tbody>
+      <tr><td>cfn-lint and validate-template</td><td>Syntax errors, wrong properties, and unused parameters in CloudFormation.</td></tr>
+      <tr><td>terraform fmt, validate, and plan</td><td>Formatting, errors in the configuration, and unexpected destroys.</td></tr>
+      <tr><td>A secret scan</td><td>Keys and passwords in the change.</td></tr>
+      <tr><td>Unit tests and a linter for Python</td><td>Broken scripts.</td></tr>
+      <tr><td>A change set or a plan in the pull request</td><td>Resources that would be replaced or deleted.</td></tr>
+    </tbody>
+  </table></div>
+  <pre class="flowcode" tabindex="0"><code>name: Validate CloudFormation
+on:
+  pull_request:
+    paths:
+      - "cloudformation/**"
+
+permissions:
+  id-token: write   # lets the job request a short-lived token
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cfn-lint
+        run: pip install cfn-lint
+      - name: Lint templates
+        run: cfn-lint cloudformation/*.yaml
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::&lt;ACCOUNT_ID&gt;:role/&lt;ROLE_NAME&gt;
+          aws-region: us-east-1
+      - name: Validate templates
+        run: |
+          for t in cloudformation/*.yaml; do
+            aws cloudformation validate-template --template-body "file://$t"
+          done
+</code></pre>
+  <ul>
+    <li>This GitHub Actions workflow was written for this course. Replace the placeholders with your own values. The lint step needs no AWS access, and the validate step uses a role.</li>
+  </ul>
+
+  <h2>5.4 AWS Access Without Long-Lived Keys</h2>
+  <ul>
+    <li>Do not store an AWS access key as a secret in the Git host. A stored key is long-lived, and it can leak.</li>
+    <li>With <strong>OpenID Connect (OIDC)</strong>, a GitHub Actions workflow gets a short-lived token for each run, and exchanges it for temporary AWS credentials by assuming an IAM role.</li>
+    <li>You add GitHub’s OIDC provider, https://token.actions.githubusercontent.com, to IAM, and you create a role that trusts it. The job needs the permission <strong>id-token: write</strong> to request the token. That permission does not let the workflow change any resource.</li>
+    <li>In the role’s trust policy, use the <strong>token.actions.githubusercontent.com:sub</strong> condition key, so that only your repository and branch can assume the role.</li>
+    <li>Give the role least privilege. Use a read-only role for pull request checks, and a separate role for deployments from main.</li>
+  </ul>
+
+  <h2>5.5 Deploying From Git</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Approach</th><th>How it works</th><th>Good to know</th></tr></thead>
+    <tbody>
+      <tr><td>CloudFormation Git sync</td><td>You link a repository to CloudFormation. It monitors a template file and a stack deployment file, and updates the stack when you commit a change. With pull requests, it can comment on the pull request with the changes that it will make, if you turn that on.</td><td>It uses AWS CodeConnections. It supports GitHub, GitHub Enterprise, GitLab, Bitbucket, and GitLab self-managed. It monitors only the branch that you choose, and it is available in selected Regions.</td></tr>
+      <tr><td>A pipeline, such as GitHub Actions or AWS CodePipeline</td><td>A workflow runs on a merge to main. It applies a CloudFormation stack update or runs terraform apply.</td><td>Works for CloudFormation, Terraform, and scripts. You build and maintain the workflow.</td></tr>
+      <tr><td>A manual run from a laptop</td><td>An engineer runs the command by hand.</td><td>Avoid it. It skips review and checks, and it leaves no record.</td></tr>
+    </tbody>
+  </table></div>
+
+  <ul>
+    <li>Use one folder or one branch strategy for each environment, and promote a change from dev to test to prod. Use an approval step before production.</li>
+    <li>Pin versions: use a lock file for Terraform providers and requirements.txt for Python, so that a deployment today matches a deployment next month.</li>
+  </ul>
+
+  <h2>5.6 Rolling Back</h2>
+  <ul>
+    <li>To undo a bad change, <strong>revert</strong> the commit in Git, open a pull request for the revert, and let the same pipeline deploy the earlier state.</li>
+    <li>CloudFormation also rolls back by itself when a stack operation fails (Lesson 296.1).</li>
+    <li>For Terraform, keep versioning on the state bucket, so that an earlier state can be recovered.</li>
+    <li>A rollback does not bring back deleted data, so protect data stores with DeletionPolicy, snapshots, and backups.</li>
+  </ul>
+
+  <div class="qbox">
+    <h3>Exam-Style Question</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> A company wants its CloudFormation stack to update automatically when an engineer merges a change to the template in a GitHub repository, and wants to see the planned changes in the pull request. Which solution fits best?</p>
+    <ul class="opts">
+      <li><strong>A.</strong> Use CloudFormation Git sync with the repository, and turn on the pull request comments.</li>
+      <li><strong>B.</strong> Ask engineers to copy the template into the CloudFormation console after each merge.</li>
+      <li><strong>C.</strong> Store the template in Amazon S3 and email the link to the team.</li>
+      <li><strong>D.</strong> Use AWS Config to deploy the template.</li>
+    </ul>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Correct answer: A.</strong> Git sync monitors the template and the deployment file, updates the stack when you commit a change, and can comment on the pull request with the changes that it will make.</p>
+<div class="tw"><table>
+    <thead><tr><th>Option</th><th>Result</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>Correct</td><td>The stack follows the repository, and the pull request shows the planned changes.</td></tr>
+      <tr><td>B</td><td>Incorrect</td><td>Copying a template by hand skips the review and the history.</td></tr>
+      <tr><td>C</td><td>Incorrect</td><td>Email does not deploy anything.</td></tr>
+      <tr><td>D</td><td>Incorrect</td><td>AWS Config records and evaluates configuration, and it does not deploy templates.</td></tr>
+    </tbody>
+  </table></div>
+    </details>
+  </div>
+  <div class="callout warn">
+    <h4>Exam Trap</h4>
+    <p>Remember these points:</p>
+    <ul>
+      <li>Run checks locally with hooks and again on every pull request, and block merges until the required checks pass.</li>
+      <li>Do not store AWS access keys in the Git host. Use OIDC and an IAM role with a trust condition on the repository and branch.</li>
+      <li>CloudFormation Git sync updates a stack when you commit the template or the deployment file to the monitored branch.</li>
+    </ul>
+  </div>
+  <div class="callout tip">
+    <h4>Memory Hook</h4>
+    <p>Check twice, merge once, deploy from main, and keep no stored keys in the pipeline.</p>
+  </div>
+  <div class="callout exam">
+    <h4>SAA-C03 Keyword Triggers</h4>
+    <p><strong>Trigger 1:</strong> “Update a CloudFormation stack when a template changes in Git”<br>→ CloudFormation Git sync</p>
+    <p><strong>Trigger 2:</strong> “A pipeline needs AWS access with no stored keys”<br>→ OIDC with an IAM role</p>
+    <p><strong>Trigger 3:</strong> “Block merges until tests pass”<br>→ Required status checks on the protected branch</p>
+    <p><strong>Trigger 4:</strong> “Undo a bad deployment”<br>→ Revert the commit, and deploy again</p>
+  </div>
+  <div class="res">
+    <h2>Useful Resources</h2>
+    <ul>
+      <li><span class="lbl">AWS</span> <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/git-sync.html" target="_blank" rel="noopener">Syncing stacks with a Git repository with Git sync</a></li>
+      <li><span class="lbl">GitHub</span> <a href="https://docs.github.com/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services" target="_blank" rel="noopener">Configuring OpenID Connect in Amazon Web Services</a></li>
+      <li><span class="lbl">AWS</span> <a href="https://aws.amazon.com/blogs/mt/git-pre-commit-validation-of-aws-cloudformation-templates-with-cfn-lint/" target="_blank" rel="noopener">Git pre-commit validation with cfn-lint</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ TAB 6 ============ -->
+<section class="tab" id="tab6" role="tabpanel" aria-labelledby="b6">
+  <h1 class="tabh">6. Comparison &amp; Scenarios</h1>
+
+  <h2>6.1 Comparing the File Types in Git</h2>
+  <div class="tw"><table>
+    <thead><tr><th></th><th>CloudFormation</th><th>Terraform</th><th>Python scripts</th><th>Architecture documents</th></tr></thead>
+    <tbody>
+      <tr><td>Commit</td><td>Templates and deployment files</td><td>.tf files and the lock file</td><td>Scripts, tests, requirements.txt</td><td>Markdown, diagrams as code, ADRs</td></tr>
+      <tr><td>Keep out of Git</td><td>Secrets in parameters</td><td>State, .terraform, secret variable files</td><td>Keys and the virtual environment</td><td>Nothing secret</td></tr>
+      <tr><td>Check</td><td>cfn-lint, validate-template, change set</td><td>fmt, validate, plan</td><td>Linter, tests, secret scan</td><td>Review against the change</td></tr>
+      <tr><td>Deploy from Git</td><td>Git sync, or a pipeline</td><td>A pipeline that applies from main</td><td>A pipeline or a scheduled job</td><td>Published from main, if needed</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>6.2 SAA-C03 Exam Cheat Sheet and Decision Rules</h2>
+  <div class="tw"><table>
+    <thead><tr><th>#</th><th>Scenario keywords</th><th>Answer</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Keep infrastructure templates with history and review</td><td>A Git repository with pull requests</td></tr>
+      <tr><td>2</td><td>AWS-managed Git repository</td><td>AWS CodeCommit (available to new customers again since November 24, 2025)</td></tr>
+      <tr><td>3</td><td>Branch-based workflow with short-lived branches and pull requests</td><td>GitHub flow</td></tr>
+      <tr><td>4</td><td>Force every change to be reviewed before merge</td><td>Protected branch with required pull request reviews</td></tr>
+      <tr><td>5</td><td>Block a merge until tests pass</td><td>Required status checks</td></tr>
+      <tr><td>6</td><td>Require approval from the team that owns the files</td><td>Code owners</td></tr>
+      <tr><td>7</td><td>Reverse a bad change on a shared branch</td><td>git revert</td></tr>
+      <tr><td>8</td><td>Stop credentials from being committed</td><td>git-secrets and secret scanning</td></tr>
+      <tr><td>9</td><td>An access key was committed to a public repository</td><td>Deactivate it in IAM at once</td></tr>
+      <tr><td>10</td><td>Files never to commit</td><td>Access keys, passwords, .pem files, Terraform state, and secret variable files</td></tr>
+      <tr><td>11</td><td>Terraform file to commit for consistent provider versions</td><td>.terraform.lock.hcl</td></tr>
+      <tr><td>12</td><td>Terraform state for a team on AWS</td><td>S3 backend with encryption, versioning, and locking</td></tr>
+      <tr><td>13</td><td>Check a CloudFormation template before merge</td><td>cfn-lint, validate-template, and a change set</td></tr>
+      <tr><td>14</td><td>Update a stack when a template changes in a Git repository</td><td>CloudFormation Git sync</td></tr>
+      <tr><td>15</td><td>CI job needs AWS access without stored keys</td><td>OIDC with an IAM role</td></tr>
+      <tr><td>16</td><td>Record why an architecture decision was made</td><td>Architectural decision record (ADR)</td></tr>
+      <tr><td>17</td><td>Keep documents accurate</td><td>Docs as code in the same repository, changed in the same pull request</td></tr>
+      <tr><td>18</td><td>Script needs AWS access without keys</td><td>An IAM role or temporary credentials with the default credential chain</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>6.3 Exam Scenarios</h2>
+  <div class="qbox">
+    <h3>Scenario 1</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> A company’s CloudFormation templates are edited on laptops, and production broke after an old copy was deployed. The company wants reviewed, traceable changes.</p>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Answer:</strong> Move the templates to a Git repository. Use short-lived branches and pull requests, protect the main branch with required reviews and status checks, and deploy from main with CloudFormation Git sync or a pipeline. To undo a change, revert the commit and deploy again.</p>
+    </details>
+  </div>
+  <div class="qbox">
+    <h3>Scenario 2</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> An AWS access key is found in a public repository, and a scan shows that the key was used from an unknown address.</p>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Answer:</strong> Deactivate the key in IAM at once, review what it did with the account’s activity history, and create a new key only if it is needed. Remove the secret from the code, and move the workload to an IAM role or temporary credentials. Add git-secrets and secret scanning with push protection so that it does not happen again.</p>
+    </details>
+  </div>
+  <div class="qbox">
+    <h3>Scenario 3</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> Two engineers run terraform apply at the same time, and the state is damaged. The state file was committed to Git.</p>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Answer:</strong> Move the state to a remote S3 backend with encryption, versioning, and locking, and stop committing state files. Add *.tfstate to .gitignore, and apply from a pipeline on the main branch.</p>
+    </details>
+  </div>
+  <div class="qbox">
+    <h3>Scenario 4</h3>
+    <p class="origin">Written for this course.</p>
+    <p><strong>Scenario:</strong> The architecture diagram in the wiki shows a database that was removed months ago.</p>
+    <details>
+      <summary>Show Answer and Explanation</summary>
+      <p><strong>Answer:</strong> Keep the architecture documents in the same repository as the infrastructure, as Markdown with diagrams as code, and require that a pull request that changes the infrastructure also updates the documents. Record major decisions as ADRs.</p>
+    </details>
+  </div>
+
+  <h2>6.4 Lesson Summary</h2>
+  <ul>
+    <li>Version control gives infrastructure history, review, rollback, and collaboration. The same Git workflow applies to CloudFormation files, Terraform files, Python scripts, and architecture documents.</li>
+    <li>The GitHub flow uses a short-lived branch, small commits, a pull request, review and checks, a merge, a deployment, and branch deletion. Protect main with required reviews and status checks, and undo a change with git revert.</li>
+    <li>Commit the code, the lock file, and the documents. Never commit keys, passwords, state, or secret variable files. Use .gitignore, git-secrets, and secret scanning, and deactivate a leaked key in IAM.</li>
+    <li>Check CloudFormation files with cfn-lint, validate-template, and a change set. Check Terraform files with fmt, validate, and plan, and keep state in a locked S3 backend. Write Python scripts without keys, and keep documents as code.</li>
+    <li>Run checks locally and on every pull request. Deploy from main with CloudFormation Git sync or a pipeline, and give the pipeline access with OIDC and an IAM role, not stored keys.</li>
+  </ul>
+  <div class="callout tip">
+    <h4>Memory Hook</h4>
+    <p>Branch, review, merge, deploy. Ignore the state, hide the keys, and keep the docs next to the code.</p>
+  </div>
+</section>
+
+<!-- ============ TAB 7 ============ -->
+<section class="tab" id="tab7" role="tabpanel" aria-labelledby="b7">
+  <h1 class="tabh">7. Knowledge Check</h1>
+
+  <p>Answer each question in your own words before you open the model answer. The questions were written for this course.</p>
+
+  <details>
+    <summary>Question 1: Explain why infrastructure files belong in version control.</summary>
+    <p><em>Maps to:</em> Objective 1 (Knowledge).</p>
+    <p>Infrastructure files are text, so Git can record every change with its author, time, and reason. That gives the team history, review before a change is applied, rollback to a known good version, and collaboration without overwriting each other. It also gives auditors an answer to who changed a resource and why.</p>
+  </details>
+
+  <details>
+    <summary>Question 2: Describe the steps of the GitHub flow, and how it differs from Gitflow.</summary>
+    <p><em>Maps to:</em> Objective 2 (Comprehension).</p>
+    <p>In the GitHub flow, you create a branch, commit small changes, open a pull request, address review comments while the checks run, merge into main, deploy from main, and delete the branch. Main is always deployable. Gitflow keeps long-lived main and develop branches plus feature, release, and hotfix branches, which suits products with scheduled releases.</p>
+  </details>
+
+  <details>
+    <summary>Question 3: Show how to protect the main branch and how to undo a bad change.</summary>
+    <p><em>Maps to:</em> Objective 3 (Application).</p>
+    <p>Add branch protection rules that require pull requests with approving reviews, required status checks, and optionally code owner reviews and a linear history. Force pushes and deleting the branch stay blocked. To undo a bad change on a shared branch, use git revert to add a commit that reverses it, open a pull request, and deploy the reverted version. Do not rewrite shared history.</p>
+  </details>
+
+  <details>
+    <summary>Question 4: List what to commit and what never to commit in an infrastructure repository, and explain what to do about a leaked key.</summary>
+    <p><em>Maps to:</em> Objective 4 (Application).</p>
+    <p>Commit templates, deployment files, .tf files, .terraform.lock.hcl, Python scripts, tests, requirements.txt, and documents. Never commit access keys, passwords, private keys, Terraform state, or variable files with secrets, and use .gitignore, git-secrets, and secret scanning. If a key is committed, deactivate it in IAM at once, because deleting the commit does not remove other copies. Create a new key only if it is needed, and review what the key did.</p>
+  </details>
+
+  <details>
+    <summary>Question 5: Compare the checks for CloudFormation files, Terraform files, Python scripts, and documents.</summary>
+    <p><em>Maps to:</em> Objective 5 (Analysis).</p>
+    <p>CloudFormation: cfn-lint, validate-template, and a change set that shows replaced or deleted resources. Terraform: fmt, validate, and plan, with the state in a remote locked backend. Python: a linter, tests, a secret scan, and a check that the script uses a role and not keys. Documents: a review against the change, links that work, and an ADR for a major decision.</p>
+  </details>
+
+  <details>
+    <summary>Question 6: Explain how a pull request check can use AWS without a stored access key, and how CloudFormation Git sync deploys from Git.</summary>
+    <p><em>Maps to:</em> Objective 6 (Analysis).</p>
+    <p>With OIDC, the workflow requests a short-lived token for each run, and exchanges it for temporary AWS credentials by assuming an IAM role. The IAM trust policy limits the role to a repository and branch with the sub condition key, and the job needs the id-token: write permission. CloudFormation Git sync links a repository through CodeConnections, monitors the template file and the stack deployment file on one branch, and updates the stack when you commit a change. It can also comment on a pull request with the planned changes.</p>
+  </details>
+
+  <details>
+    <summary>Question 7: Design a repository and a workflow for FlashCart’s CloudFormation, Terraform, Python, and architecture documents.</summary>
+    <p><em>Maps to:</em> Objective 7 (Synthesis).</p>
+    <p>Use one repository with folders for CloudFormation, Terraform, scripts, and docs, a README, and a .gitignore that excludes state, keys, and variable files. Use the GitHub flow with a protected main branch, required reviews, code owners for each area, and required checks: cfn-lint, validate-template, terraform fmt, validate, and plan, a Python linter and tests, and a secret scan. Run the checks locally with a hook and on every pull request through OIDC roles. Deploy from main with CloudFormation Git sync for stacks and a pipeline for Terraform with S3 state and locking, and revert the commit to roll back. Keep ADRs and diagrams as code in the same pull request as the change.</p>
+  </details>
+
+</section>
+
+<div class="pager bottom" id="pagerBottom">
+  <button type="button" id="prevBot">Previous</button>
+  <button type="button" id="nextBot">Next</button>
+</div>
+</main>
+</div>
+<footer class="copy"><p>Copyright © 2026 Per Scholas. All rights reserved.</p></footer>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  root.className+=' js';
+  var tabs=[].slice.call(document.querySelectorAll('.tab'));
+  var btns=[].slice.call(document.querySelectorAll('button.tabbtn'));
+  var live=document.getElementById('live');
+  var cur=0;
+  function show(i,focusTop){
+    if(i<0||i>=tabs.length){return;}
+    cur=i;
+    tabs.forEach(function(t,k){t.classList.toggle('active',k===i);});
+    btns.forEach(function(b,k){b.setAttribute('aria-selected',k===i?'true':'false');b.tabIndex=(k===i)?0:-1;});
+    var pb=[['prevTop','nextTop'],['prevBot','nextBot']];
+    pb.forEach(function(p){
+      document.getElementById(p[0]).disabled=(i===0);
+      document.getElementById(p[1]).disabled=(i===tabs.length-1);
+    });
+    live.textContent='Tab '+i+' of '+(tabs.length-1)+': '+btns[i].textContent;
+    try{history.replaceState(null,'','#tab'+i);}catch(e){}
+    if(focusTop){window.scrollTo(0,0);}
+  }
+  btns.forEach(function(b,k){
+    b.addEventListener('click',function(){show(k,true);});
+    b.addEventListener('keydown',function(e){
+      if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();var n=Math.min(k+1,btns.length-1);show(n,false);btns[n].focus();}
+      if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();var p=Math.max(k-1,0);show(p,false);btns[p].focus();}
+    });
+  });
+  ['prevTop','prevBot'].forEach(function(id){document.getElementById(id).addEventListener('click',function(){show(cur-1,true);});});
+  ['nextTop','nextBot'].forEach(function(id){document.getElementById(id).addEventListener('click',function(){show(cur+1,true);});});
+  [].slice.call(document.querySelectorAll('[data-go]')).forEach(function(b){
+    b.addEventListener('click',function(){show(parseInt(b.getAttribute('data-go'),10),true);});
+  });
+  var start=0;
+  try{var m=/^#tab(\d+)$/.exec(location.hash);if(m){start=Math.min(parseInt(m[1],10),tabs.length-1);}}catch(e){}
+  show(start,false);
+})();
+</script>
+<noscript><style>.pager{display:none}.tab{display:block !important;margin-bottom:40px}</style></noscript>
+</body>
+</html>
